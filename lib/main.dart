@@ -11,6 +11,7 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'Prime Counter',
       theme: ThemeData(
         pageTransitionsTheme: const PageTransitionsTheme(
           builders: {

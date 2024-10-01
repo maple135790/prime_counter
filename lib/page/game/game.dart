@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:prime_counter/page/game/game_view_model.dart';
 import 'package:prime_counter/page/game/prime_list.dart';
+import 'package:prime_counter/page/menu/menu_page.dart';
 import 'package:provider/provider.dart';
 
 class GamePage extends StatefulWidget {
@@ -10,17 +11,65 @@ class GamePage extends StatefulWidget {
   State<GamePage> createState() => _GamePageState();
 }
 
-class _GamePageState extends State<GamePage> {
+class _GamePageState extends State<GamePage>
+    with SingleTickerProviderStateMixin {
   final viewModel = GameViewModel();
+  late final AnimationController animationController;
+  late final Animation<Color?> animationBgColor;
+  late final backgroundColorTween = ColorTween(
+    begin: ThemeData.fallback().scaffoldBackgroundColor,
+    end: Colors.green,
+  );
+
   static const primeTextStyle = TextStyle(
     fontSize: 72,
     fontWeight: FontWeight.w900,
     color: Colors.amber,
   );
+
   static const numberTextStyle = TextStyle(
     fontSize: 54,
     color: Colors.black,
   );
+
+  @override
+  void initState() {
+    super.initState();
+    viewModel
+      ..addListener(onGameFinished)
+      ..addListener(onGameReset);
+
+    animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 450),
+    );
+
+    animationBgColor = backgroundColorTween.animate(
+        CurvedAnimation(parent: animationController, curve: Curves.easeInOut))
+      ..addListener(() {
+        setState(() {});
+      });
+  }
+
+  @override
+  void dispose() {
+    viewModel
+      ..removeListener(onGameFinished)
+      ..removeListener(onGameReset);
+    super.dispose();
+  }
+
+  void onGameFinished() {
+    if (!viewModel.isGameFinished) return;
+
+    animationController.forward();
+  }
+
+  void onGameReset() {
+    if (viewModel.operationCount != 0) return;
+    
+    animationController.reverse();
+  }
 
   void onNumberIncrement() {
     viewModel.increment();
@@ -44,26 +93,13 @@ class _GamePageState extends State<GamePage> {
     );
   }
 
-  void onShowDetail() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Game Finished'),
-          content: Text(
-            'You have finished the game!\nPress count: ${viewModel.operationCount}',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
+  void onMenuPressed() {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (context) => ChangeNotifierProvider.value(
+        value: viewModel,
+        child: const MenuPage(),
+      ),
+    ));
   }
 
   @override
@@ -72,18 +108,13 @@ class _GamePageState extends State<GamePage> {
       value: viewModel,
       builder: (context, child) {
         return Scaffold(
+          backgroundColor: animationBgColor.value,
           appBar: AppBar(
-            title: const Text('Prime Counter (~1000)'),
+            title: const Text('Prime Counter'),
             actions: [
-              Selector<GameViewModel, bool>(
-                selector: (context, vm) => vm.isGameFinished,
-                builder: (context, isGameFinished, child) => Offstage(
-                  offstage: !isGameFinished,
-                  child: IconButton(
-                    onPressed: onShowDetail,
-                    icon: const Icon(Icons.more_vert_outlined),
-                  ),
-                ),
+              IconButton(
+                icon: const Icon(Icons.more_vert),
+                onPressed: onMenuPressed,
               )
             ],
           ),
@@ -123,6 +154,7 @@ class _GamePageState extends State<GamePage> {
                         selector: (context, vm) => vm.canDecrement,
                         builder: (context, canDecrement, child) =>
                             FloatingActionButton(
+                          heroTag: 'decrement',
                           onPressed: canDecrement ? onNumberDecrement : null,
                           child: const Text("-1"),
                         ),
@@ -134,6 +166,7 @@ class _GamePageState extends State<GamePage> {
                             isLabelVisible: hasNewPrime,
                             smallSize: 8,
                             child: FloatingActionButton.extended(
+                              heroTag: 'Prime List',
                               onPressed: onPrimeListPressed,
                               icon: const Icon(Icons.list_alt_rounded),
                               label: const Text('Prime List'),
@@ -142,6 +175,7 @@ class _GamePageState extends State<GamePage> {
                         },
                       ),
                       FloatingActionButton(
+                        heroTag: 'increment',
                         onPressed: onNumberIncrement,
                         child: const Text("+3"),
                       ),

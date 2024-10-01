@@ -18,7 +18,7 @@ class PrimeList extends StatelessWidget {
         return ListView.builder(
           itemCount: record.length,
           itemBuilder: (context, index) {
-          final prime = record.elementAt(index);
+            final prime = record.elementAt(index);
             return ListTile(
               title: Text(
                 prime.toString(),

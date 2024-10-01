@@ -1,8 +1,23 @@
 import 'package:flutter/material.dart';
 
+enum GameDifficulty {
+  easy(10, 4),
+  normal(100, 25),
+  hard(500, 95);
+
+  final int maxNumber;
+  final int primeNumberCount;
+
+  const GameDifficulty(
+    this.maxNumber,
+    this.primeNumberCount,
+  );
+}
+
 class GameViewModel extends ChangeNotifier {
-  static const _primeNumbersUnder100 = 168;
-  static const _maxNumber = 1000;
+  GameDifficulty _difficulty = GameDifficulty.easy;
+  GameDifficulty get difficulty => _difficulty;
+
   int _number = 0;
   int get number => _number;
 
@@ -18,13 +33,24 @@ class GameViewModel extends ChangeNotifier {
   bool _isPrime = false;
   bool get isPrime => _isPrime;
 
-  bool get isGameFinished => _isGameFinished;
   bool _isGameFinished = false;
+  bool get isGameFinished => _isGameFinished;
 
   bool get canDecrement => _number - _decrementValue >= 0;
-  bool get canIncrement => number + _incrementValue <= _maxNumber;
+  bool get canIncrement => number + _incrementValue <= _difficulty.maxNumber;
 
   final primeRecord = <int>[];
+
+  void changeDifficulty(GameDifficulty difficulty) {
+    _difficulty = difficulty;
+    _number = 0;
+    _operationCount = 0;
+    _hasNewPrime = false;
+    _isPrime = false;
+    _isGameFinished = false;
+    primeRecord.clear();
+    notifyListeners();
+  }
 
   void checkedNewPrime() {
     _hasNewPrime = false;
@@ -37,7 +63,7 @@ class GameViewModel extends ChangeNotifier {
     _number += _incrementValue;
     _operationCount++;
     _isPrime = _primeCheck(_number);
-    _isGameFinished = primeRecord.length == _primeNumbersUnder100;
+    _isGameFinished = primeRecord.length == _difficulty.primeNumberCount;
     notifyListeners();
   }
 
@@ -47,7 +73,7 @@ class GameViewModel extends ChangeNotifier {
     _number -= _decrementValue;
     _operationCount++;
     _isPrime = _primeCheck(_number);
-    _isGameFinished = primeRecord.length == _primeNumbersUnder100;
+    _isGameFinished = primeRecord.length == _difficulty.primeNumberCount;
     notifyListeners();
   }
 
